@@ -59,9 +59,14 @@ jobs:
     - name: Build Docker Model
       working-directory: ./MLProject
       run: |
-        RUN_ID=$(cat latest_run_id.txt)
+        echo "Isi latest_run_id.txt:"
+        cat latest_run_id.txt
+
+        RUN_ID=$(cat latest_run_id.txt | tr -d '\n')
+        echo "RUN_ID = $RUN_ID"
+
         mlflow models build-docker \
-          -m runs:/$RUN_ID/model \
+          -m "runs:/$RUN_ID/model" \
           -n zxynnn/msml-mlflow-model
 
     - name: Tag Image Docker
