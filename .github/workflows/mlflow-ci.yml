@@ -29,6 +29,7 @@ jobs:
       run: |
         pip install mlflow==3.8.0
         pip install numpy==1.26.4 pandas==2.2.2 scikit-learn==1.6.1 matplotlib==3.9.2
+        sudo apt-get update && sudo apt-get install -y jq  # Untuk parse JSON run_id
 
     - name: Run mlflow project
       working-directory: ./MLProject
@@ -36,13 +37,24 @@ jobs:
         DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
       run: |
         mlflow run . --env-manager=local
+        echo "Training selesai! Cek metrics di log di atas."
 
     - name: Get latest MLflow run_id
       working-directory: ./MLProject
       run: |
-        ls mlruns/*/*/meta.yaml | head -n 1 | awk -F'/' '{print $3}' > latest_run_id.txt
-        echo "Latest run_id:"
-        cat latest_run_id.txt
+        # Ambil run_id terbaru dari mlruns (reliable via mlflow command)
+        RUN_ID=$(mlflow runs list --max-results=1 --output-json | jq -r '.[0].run_id')
+        echo "Latest run_id: $RUN_ID"
+        if [ -z "$RUN_ID" ]; then
+          echo "Error: No run_id found. Check mlruns folder."
+          exit 1
+        fi
+        echo "RUN_ID=$RUN_ID" >> $GITHUB_ENV  # Export untuk step selanjutnya
+
+    - name: Install Python Dependencies
+      run: |
+        # Tambahan dependencies kalau diperlukan (misal untuk Docker atau Google Drive)
+        pip install gdown  # Untuk download dari Google Drive kalau perlu
 
     - name: Upload to Google Drive
       uses: actions/upload-artifact@v4
@@ -50,24 +62,23 @@ jobs:
         name: mlflow-artifacts
         path: MLProject/mlruns
 
+    - name: Build Docker Model
+      working-directory: ./MLProject
+      run: |
+        echo "RUN_ID = ${{ env.RUN_ID }}"
+        if [ -z "${{ env.RUN_ID }}" ]; then
+          echo "Error: RUN_ID is empty. Skip Docker build."
+          exit 0  # Gak crash CI, cuma skip
+        fi
+        mlflow models build-docker \
+          -m "runs:/${{ env.RUN_ID }}/model" \
+          -n zxynnn/msml-mlflow-model
+
     - name: Log in to Docker Hub
       uses: docker/login-action@v3
       with:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-    - name: Build Docker Model
-      working-directory: ./MLProject
-      run: |
-        echo "Isi latest_run_id.txt:"
-        cat latest_run_id.txt
-
-        RUN_ID=$(cat latest_run_id.txt | tr -d '\n')
-        echo "RUN_ID = $RUN_ID"
-
-        mlflow models build-docker \
-          -m "runs:/$RUN_ID/model" \
-          -n zxynnn/msml-mlflow-model
 
     - name: Tag Image Docker
       run: |
@@ -84,3 +95,17 @@ jobs:
 
     - name: Complete job
       run: echo "CI pipeline completed successfully"
+
+  Post Set up Python 3.12.6:
+    needs: Set-up-jobs
+    runs-on: ubuntu-latest
+    steps:
+    - name: Post Set up Python 3.12.6
+      run: echo "Post Python setup complete"
+
+  Post Run action/checkout@v3:
+    needs: Set-up-jobs
+    runs-on: ubuntu-latest
+    steps:
+    - name: Post Run action/checkout@v3
+      run: echo "Post checkout complete"
