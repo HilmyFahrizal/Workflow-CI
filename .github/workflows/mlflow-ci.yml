@@ -43,7 +43,7 @@ jobs:
       working-directory: ./MLProject
       run: |
         # Ambil run_id terbaru dari mlruns (reliable via mlflow command)
-        RUN_ID=$(mlflow runs list --max-results=1 --output-json | jq -r '.[0].run_id')
+        RUN_ID=$(mlflow runs list --limit=1 --output-json | jq -r '.[0].run_id')
         echo "Latest run_id: $RUN_ID"
         if [ -z "$RUN_ID" ]; then
           echo "Error: No run_id found. Check mlruns folder."
