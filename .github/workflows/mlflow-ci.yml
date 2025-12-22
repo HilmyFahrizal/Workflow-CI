@@ -55,9 +55,9 @@ jobs:
     - name: Build Docker Model
       working-directory: ./MLProject
       run: |
-        mlflow build-docker \
-          -m mlruns/*/*/artifacts/model \
-          -n hilmyfahrizal/msml-mlflow-model:latest
+        mlflow models build-docker \
+          -m runs:/$(cat latest_run_id.txt)/model \
+          -n ${{ secrets.DOCKERHUB_USERNAME }}/mlflow-model
 
     - name: Log in to Docker Hub
       uses: docker/login-action@v3
