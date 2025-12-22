@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 jobs:
-  Set up jobs:
+  Set-up-jobs:
     runs-on: ubuntu-latest
 
     steps:
@@ -102,15 +102,15 @@ jobs:
     - name: Complete job
       run: echo "CI pipeline completed successfully"
 
-  Post Set up Python 3.12.6:
-    needs: Set up jobs
+  post-setup-python:
+    needs: Set-up-jobs
     runs-on: ubuntu-latest
     steps:
     - name: Post Set up Python 3.12.6
       run: echo "Post Python setup complete"
 
-  Post Run action/checkout@v3:
-    needs: Set up jobs
+  post-checkout:
+    needs: Set-up-jobs
     runs-on: ubuntu-latest
     steps:
     - name: Post Run action/checkout@v3
