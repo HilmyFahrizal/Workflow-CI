@@ -96,14 +96,14 @@ jobs:
     - name: Complete job
       run: echo "CI pipeline completed successfully"
 
-  Post Set up Python 3.12.6:
+  post-setup-python:
     needs: Set-up-jobs
     runs-on: ubuntu-latest
     steps:
     - name: Post Set up Python 3.12.6
       run: echo "Post Python setup complete"
 
-  Post Run action/checkout@v3:
+  post-checkout:
     needs: Set-up-jobs
     runs-on: ubuntu-latest
     steps:
