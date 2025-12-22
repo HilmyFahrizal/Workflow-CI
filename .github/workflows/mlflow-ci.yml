@@ -23,6 +23,7 @@ jobs:
       run: |
         python --version
         pip --version
+        docker --version
 
     - name: Install Dependencies
       run: |
@@ -40,11 +41,8 @@ jobs:
       working-directory: ./MLProject
       run: |
         ls mlruns/*/*/meta.yaml | head -n 1 | awk -F'/' '{print $3}' > latest_run_id.txt
+        echo "Latest run_id:"
         cat latest_run_id.txt
-
-    - name: Install Python Dependencies
-      run: |
-        pip install docker
 
     - name: Upload to Google Drive
       uses: actions/upload-artifact@v4
@@ -52,28 +50,29 @@ jobs:
         name: mlflow-artifacts
         path: MLProject/mlruns
 
-    - name: Build Docker Model
-      working-directory: ./MLProject
-      run: |
-        mlflow models build-docker \
-          -m runs:/$(cat latest_run_id.txt)/model \
-          -n ${{ secrets.DOCKERHUB_USERNAME }}/mlflow-model
-
     - name: Log in to Docker Hub
       uses: docker/login-action@v3
       with:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+    - name: Build Docker Model
+      working-directory: ./MLProject
+      run: |
+        RUN_ID=$(cat latest_run_id.txt)
+        mlflow models build-docker \
+          -m runs:/$RUN_ID/model \
+          -n zxynnn/msml-mlflow-model
+
     - name: Tag Image Docker
       run: |
-        docker tag hilmyfahrizal/msml-mlflow-model:latest \
-                   hilmyfahrizal/msml-mlflow-model:ci-latest
+        docker tag zxynnn/msml-mlflow-model:latest \
+                   zxynnn/msml-mlflow-model:ci-latest
 
     - name: Push Docker Image
       run: |
-        docker push hilmyfahrizal/msml-mlflow-model:latest
-        docker push hilmyfahrizal/msml-mlflow-model:ci-latest
+        docker push zxynnn/msml-mlflow-model:latest
+        docker push zxynnn/msml-mlflow-model:ci-latest
 
     - name: Push Log in Docker Hub
       run: echo "Docker image successfully pushed to Docker Hub"
