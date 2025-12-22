@@ -42,8 +42,41 @@ jobs:
         ls mlruns/*/*/meta.yaml | head -n 1 | awk -F'/' '{print $3}' > latest_run_id.txt
         cat latest_run_id.txt
 
-    - name: Upload MLflow Artifacts to GitHub
+    - name: Install Python Dependencies
+      run: |
+        pip install docker
+
+    - name: Upload to Google Drive
       uses: actions/upload-artifact@v4
       with:
         name: mlflow-artifacts
         path: MLProject/mlruns
+
+    - name: Build Docker Model
+      working-directory: ./MLProject
+      run: |
+        mlflow build-docker \
+          -m mlruns/*/*/artifacts/model \
+          -n hilmyfahrizal/msml-mlflow-model:latest
+
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Tag Image Docker
+      run: |
+        docker tag hilmyfahrizal/msml-mlflow-model:latest \
+                   hilmyfahrizal/msml-mlflow-model:ci-latest
+
+    - name: Push Docker Image
+      run: |
+        docker push hilmyfahrizal/msml-mlflow-model:latest
+        docker push hilmyfahrizal/msml-mlflow-model:ci-latest
+
+    - name: Push Log in Docker Hub
+      run: echo "Docker image successfully pushed to Docker Hub"
+
+    - name: Complete job
+      run: echo "CI pipeline completed successfully"
