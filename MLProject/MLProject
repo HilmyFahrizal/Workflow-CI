@@ -1,0 +1,12 @@
+name: household-energy-training
+
+conda_env: conda.yaml
+
+tracking_uri: {env:MLFLOW_TRACKING_URI}
+
+experiment: Household_Energy_Training
+backend_store_uri: sqlite:///mlflow_tracking.db
+
+entry_points:
+  main:
+    command: "python modelling.py"
